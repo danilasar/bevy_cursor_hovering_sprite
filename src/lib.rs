@@ -7,11 +7,11 @@ pub struct CursorHoveringSpritePlugin;
 impl Plugin for CursorHoveringSpritePlugin {
     fn build(&self, app: &mut App) {
         app
-        .init_resource::<CursorHoveringCamera>()
-        .init_asset::<BorderPolygon>()
-        .init_state::<CursorHoveringSpriteState>()
-        .add_event::<CursorOnSprite>()
-        .add_systems(Update, cursor_hovering.run_if(in_state(CursorHoveringSpriteState::Checking)))
+            .init_resource::<CursorHoveringCamera>()
+            .init_asset::<BorderPolygon>()
+            .init_state::<CursorHoveringSpriteState>()
+            .add_event::<CursorOnSprite>()
+            .add_systems(Update, cursor_hovering.run_if(in_state(CursorHoveringSpriteState::Checking)))
         ;
     }
 }
@@ -65,7 +65,7 @@ fn get_cursor_xy(
         Some(..) => {
             if let Ok((camera, camera_transform)) = camera_query.get(camera_entity){
                 return cursor_pos
-                            .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor))
+                    .and_then(|cursor| camera.viewport_to_world_2d(camera_transform, cursor))
             } else {
                 return None
             }
@@ -87,9 +87,9 @@ fn point_is_inside_polygon(
     for i in 0..num_vertices{
         let p1 = polygon_pos + polygon_border[i];
         let p2 = polygon_pos + polygon_border[(i+1) % num_vertices];
-        if y > f32::min(p1.y, p2.y) 
-        && y <= f32::max(p1.y, p2.y)
-        && x <= f32::max(p1.x, p2.x) {
+        if y > f32::min(p1.y, p2.y)
+            && y <= f32::max(p1.y, p2.y)
+            && x <= f32::max(p1.x, p2.x) {
             let x_intersection = (y - p1.y) * (p2.x - p1.x) / (p2.y - p1.y) + p1.x;
 
             if p1.x == p2.x || x <= x_intersection {
@@ -107,7 +107,7 @@ fn cursor_hovering(
     visible_entities_query: Query<&VisibleEntities>,
     sprite_query: Query<(&GlobalTransform, &SpriteBorder)>,
     border_asset: Res<Assets<BorderPolygon>>,
-    picking_camera: Res<CursorHoveringCamera>, 
+    picking_camera: Res<CursorHoveringCamera>,
     mut cursor_on_event_writer: EventWriter<CursorOnSprite>,
 ){
     let mut hoving_entity: Option<Entity> = None;
@@ -115,13 +115,14 @@ fn cursor_hovering(
 
     if let Some(camera_entity) = picking_camera.entity {
         if let Some(cursor_xy) = get_cursor_xy(&window_query, &camera_query, camera_entity){
-            for entity in visible_entities_query.single().iter(){
+            for entity in visible_entities_query.single().iter::<Entity>(){
                 if let Ok((transform, border))= sprite_query.get(*entity){
                     let global_translation = transform.translation();
                     if global_translation.z < hoving_entity_z {continue}
 
                     let border_pos = Vec2{x:global_translation.x, y:global_translation.y};
-                    let polygon_border = border_asset.get(border.polygon.clone()).unwrap();
+                    //let new_poly = border.polygon.clone();
+                    let polygon_border = border_asset.get(border.polygon.id()).unwrap();
                     if point_is_inside_polygon(cursor_xy, border_pos, &polygon_border.points) {
                         hoving_entity = Some(*entity);
                         hoving_entity_z = global_translation.z;
@@ -131,7 +132,7 @@ fn cursor_hovering(
         }
     }
 
-    if let Some(entity_id) = hoving_entity { 
+    if let Some(entity_id) = hoving_entity {
         cursor_on_event_writer.send(CursorOnSprite{entity: entity_id});
     }
 }
